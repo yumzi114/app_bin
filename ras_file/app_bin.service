@@ -1,0 +1,18 @@
+[Unit]
+Description=App Bin (Native GUI)
+After=graphical.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/app_bin
+Restart=always
+RestartSec=2
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/yum/.Xauthority
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+
+[Install]
+WantedBy=default.target
+
+#File path ~/.config/systemd/user/app_bin.service

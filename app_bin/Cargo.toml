@@ -1,0 +1,23 @@
+[package]
+name = "app_bin"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+readme = { workspace = true }
+license = { workspace = true }
+
+[dependencies]
+app_lib = { path = "../app_lib" }
+eframe = { workspace = true }
+tokio = { workspace = true }
+catppuccin-egui = { version = "5.6.0", default-features = false, features = [
+    "egui32",
+] }
+defaults = { workspace = true }
+chrono = { workspace = true }
+egui_extras = { version = "0.32.0", features = ["all_loaders"] }
+image = "0.25.6"
+gpio-cdev = "0.6.0"
+default = "0.1.2"
+
+
