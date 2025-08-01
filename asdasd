@@ -1,0 +1,5 @@
+let mut style = (*ctx.style()).clone();
+style.visuals.widgets.inactive.bg_fill = egui::Color32::from_rgb(80, 80, 200);  // 기본 배경
+style.visuals.widgets.hovered.bg_fill  = egui::Color32::from_rgb(100, 100, 230); // 호버
+style.visuals.widgets.active.bg_fill   = egui::Color32::from_rgb(60, 60, 180);  // 클릭 중
+ctx.set_style(style);

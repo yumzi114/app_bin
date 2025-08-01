@@ -68,7 +68,13 @@ impl Decoder for LTELineCodec {
                     if trimmed.is_empty() {
                         Ok(None) // 빈 줄은 무시
                     } else {
-                        Ok(Some(trimmed.to_string()))
+                        let trimmed= trimmed.to_string().replace("OK", "");
+                        if trimmed.is_empty() {
+                            Ok(None) // ✅ OK만 있거나 제거 후 빈 문자열이면 무시
+                        } else {
+                            Ok(Some(trimmed))
+                        }
+                        // Ok(Some(trimmed.to_string()))
                     }
                 }
                 Err(_) => Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid UTF-8")),
