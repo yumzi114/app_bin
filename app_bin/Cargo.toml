@@ -20,4 +20,4 @@ image = "0.25.6"
 gpio-cdev = "0.6.0"
 # default = "0.1.2"
 better_default = { workspace = true }
-
+regex = { workspace = true }

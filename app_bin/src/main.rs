@@ -14,7 +14,7 @@ mod components;
 mod contents;
 use app_lib::ctr_mod::{
     gps_ctr::{self, gps_reader_thread, Gps_Reader_task},
-    lte_ctr::{lte_reader_thread, lte_sender_thread, Cesq, Csq, Lte_Reader_Task},
+    lte_ctr::{lte_reader_thread, lte_sender_thread, Cesq, CgpAddr, Cnum, Csq, Lte_Reader_Task},
 };
 
 
@@ -24,9 +24,9 @@ struct Menu_Ctl{
     #[default(false)]
     side_open:bool,
     anim:f32,
-    #[default(Color32::from_rgb(0, 0, 0))]
+    #[default(Color32::from_rgb(255, 0, 0))]
     value_color:Color32,
-    #[default(15.)]
+    #[default(24.)]
     feild_font_size:f32
     // #[default(false)]
     // lte_side:bool,
@@ -114,13 +114,21 @@ impl eframe::App for RasApp {
         
         catppuccin_egui::set_theme(&ctx, catppuccin_egui::FRAPPE);
         if let Ok(l_msg) = self.lte_reader_task.msg_rx.try_recv() {
-            if l_msg.starts_with("+CSQ: "){
-                self.lte_reader_task.last_csq=Some(Csq::new(l_msg.clone()));
+            match l_msg{
+                msg if msg.starts_with("+CSQ: ") => {
+                    self.lte_reader_task.last_csq=Some(Csq::new(msg.clone()));
+                },
+                msg if msg.starts_with("+CESQ: ") => {
+                    self.lte_reader_task.last_cesq=Some(Cesq::new(msg.clone()));
+                },
+                msg if msg.starts_with("+CGPADDR: ") => {
+                    self.lte_reader_task.last_cgpaddr=Some(CgpAddr::new(msg.clone()));
+                },
+                msg if msg.starts_with("+CNUM: ") => {
+                    self.lte_reader_task.last_cnum=Some(Cnum::new(msg.clone()));
+                },
+                _=>{self.test_list.push(l_msg);}
             }
-            if l_msg.starts_with("+CESQ: "){
-                self.lte_reader_task.last_cesq=Some(Cesq::new(l_msg.clone()));
-            }
-            self.test_list.push(l_msg);
             // ui.label(l_msg);
         }
         egui::TopBottomPanel::top("time_head")

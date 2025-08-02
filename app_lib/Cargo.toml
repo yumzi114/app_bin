@@ -21,3 +21,7 @@ ublox = { version = "0.5.0", features = ["serde", "std", "ubx_proto27"], default
 nmea = "0.7.0"
 gpio-cdev = "0.6.0"
 better_default = { workspace = true }
+regex = { workspace = true }
+
+
+

@@ -3,6 +3,7 @@ use std::{io::Read, process::exit, thread::{self}, time::Duration};
 use chrono::{DateTime, Local};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures_util::{SinkExt, StreamExt};
+use regex::Regex;
 use tokio::{io::{split, AsyncWriteExt}, runtime::Runtime, sync::{mpsc, oneshot}, time::sleep};
 use tokio_serial::{SerialPortBuilderExt, SerialStream};
 #[cfg(unix)]
@@ -27,6 +28,12 @@ impl Csq {
             ber,
             time: Local::now(),
         }
+    }pub fn parser(&self)->Vec<String>{
+        let mut list = vec![];
+        list.push(self.rssi.to_string());
+        list.push(self.ber.to_string());
+        list.push(self.time.format("%H:%M:%S").to_string());
+        list
     }
 }
 
@@ -57,20 +64,77 @@ impl Cesq {
             time: Local::now(),
         }
     }
+    pub fn parser(&self)->Vec<String>{
+        let mut list = vec![];
+        list.push(self.rxlev.to_string());
+        list.push(self.ber.to_string());
+        list.push(self.rscp.to_string());
+        list.push(self.ecno.to_string());
+        list.push(self.rsrq.to_string());
+        list.push(self.rsrp.to_string());
+        list.push(self.time.format("%H:%M:%S").to_string());
+        list
+    }
+}
+
+pub struct Cnum{
+    pub number:String,
+    pub n_type:u8,
+    pub time:DateTime<Local>,
+}
+impl Cnum{
+    pub fn new(text: String) -> Cnum {
+        let mut number = String::new();
+        let mut n_type: u8 = 0;
+        let t = text.trim().trim_start_matches("+CNUM:").trim();
+        let parts: Vec<&str> = t.split('"').collect();
+        if parts.len() >= 5 {
+            number = parts[3].to_string();
+            if let Some(tail) = parts[4].split(',').nth(1) {
+                n_type = tail.trim().parse::<u8>().unwrap_or(0);
+            }
+        }
+
+        Cnum { number, n_type,time: Local::now(), }
+    }
+    pub fn parser(&self)->Vec<String>{
+        vec![self.number.clone(), self.n_type.to_string(),self.time.format("%H:%M:%S").to_string()]
+    }
+}
+pub struct CgpAddr{
+    pub ip_addr:String,
+    pub time:DateTime<Local>,
+}
+impl CgpAddr {
+    pub fn new(text: String) -> CgpAddr {
+        let rest = text.trim().strip_prefix("+CGPADDR: ").expect("Invalid CSQ format");
+        // let parts: Vec<&str> = rest.trim().split(',').collect();
+        CgpAddr{
+            ip_addr:rest.to_string(),
+            time: Local::now(),
+        }
+    }
+    pub fn parser(&self)->Vec<String>{
+        vec![self.ip_addr.clone(), self.time.format("%H:%M:%S").to_string()]
+    }
 }
 pub struct Lte_Reader_Task{
     pub msg_tx:Sender<String>,
     pub msg_rx:Receiver<String>,
     pub last_csq:Option<Csq>,
     pub last_cesq:Option<Cesq>,
+    pub last_cgpaddr:Option<CgpAddr>,
+    pub last_cnum:Option<Cnum>,
 }
 impl Lte_Reader_Task{
     pub fn new()->Self{
         let (msg_tx,msg_rx)=unbounded::<String>();
         let last_csq=None;
         let last_cesq=None;
+        let last_cnum=None;
+        let last_cgpaddr=None;
         Self { 
-            msg_tx,msg_rx,last_csq,last_cesq
+            msg_tx,msg_rx,last_csq,last_cesq,last_cnum,last_cgpaddr
          }
 
     }
@@ -163,6 +227,21 @@ pub fn lte_sender_thread(
             //         tokio::time::sleep(Duration::from_secs(1)).await;
             //     }
             // });
+            let cmd_tx_clone = cmd_tx.clone();
+            tokio::spawn(async move {
+                loop {
+                    send_cmd(&cmd_tx_clone, "AT+CNUM").await;
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+            });
+            let cmd_tx_clone = cmd_tx.clone();
+            tokio::spawn(async move {
+                loop {
+                    send_cmd(&cmd_tx_clone, "AT+CGPADDR=1").await;
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
+            });
+            let cmd_tx_clone = cmd_tx.clone();
             tokio::spawn(async move {
                 loop {
                     send_cmd(&cmd_tx_clone, "AT+CESQ").await;
