@@ -24,33 +24,86 @@ pub fn lte_sub_sms_view(app:&mut RasApp, ui: &mut Ui,ctx: &egui::Context)->Inner
         //     app.menu_ctl.test_sms_nt = !app.menu_ctl.test_sms_nt;
         // }
         // let mode_str = if app.lte_reader_task.cmgf==CMGF::TEXT{"TEXT"}else {"PDU"};
-        ui.label(RichText::new(d_str).strong().size(20.0));
+        ui.label(RichText::new(d_str).strong().size(15.0));
         
-        ui.add_space(10.0);
         TableBuilder::new(ui)
-            .striped(true) // 줄무늬 행
-            .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-            .column(Column::auto())   // 첫 번째 컬럼 자동 폭
-            .column(Column::remainder()) // 두 번째 컬럼은 남는 공간 차지
-            .column(Column::exact(100.0)) // 세 번째 컬럼은 폭 100px 고정
-            .header(20.0, |mut header| {
-                header.col(|ui| { ui.label("이름"); });
-                header.col(|ui| { ui.label("나이"); });
-                header.col(|ui| { ui.label("직업"); });
+            .striped(true) 
+            // .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+            .column(Column::auto())   
+            .column(Column::remainder())
+            .column(Column::remainder())
+            .column(Column::remainder())
+            .column(Column::remainder())
+            .column(Column::remainder())
+            // .column(Column::remainder()) // 두 번째 컬럼은 남는 공간 차지
+            // .column(Column::exact(100.0)) // 세 번째 컬럼은 폭 100px 고정
+            .header(50.0, |mut header| {
+                header.col(|ui| { 
+                    // let rect = ui.max_rect();
+                    // ui.painter().rect_filled(rect, CornerRadius::same(8), Color32::from_rgba_unmultiplied(11, 12, 13,150));
+
+                    ui.label(RichText::new("Num").size(25.).color(Color32::from_rgba_unmultiplied(255, 255, 255, 255)).strong().underline()); 
+                });
+                header.col(|ui| { 
+                    ui.label(RichText::new("REC").size(25.).color(Color32::from_rgba_unmultiplied(255, 255, 255, 255)).strong().underline());
+                    // ui.label("REC"); 
+                });
+                header.col(|ui| { 
+                    ui.label(RichText::new("Phone number").size(25.).color(Color32::from_rgba_unmultiplied(255, 255, 255, 255)).strong().underline());
+                });
+                header.col(|ui| { 
+                    ui.label(RichText::new("Date").size(25.).color(Color32::from_rgba_unmultiplied(255, 255, 255, 255)).strong().underline());
+                });
+                header.col(|ui| { 
+                    ui.label(RichText::new("Time").size(25.).color(Color32::from_rgba_unmultiplied(255, 255, 255, 255)).strong().underline());
+                });
+                header.col(|ui| { 
+                    ui.label(RichText::new("Message").size(25.).color(Color32::from_rgba_unmultiplied(255, 255, 255, 255)).strong().underline());
+                });
             })
             .body(|mut body| {
-                for (name, age, job) in [("홍길동", "30", "개발자"), ("김철수", "25", "디자이너"), ("이영희", "28", "기획자")] {
-                    body.row(18.0, |mut row| {
-                        row.col(|ui| { ui.label(name); });
-                        row.col(|ui| { ui.label(age); });
-                        row.col(|ui| { ui.label(job); });
+                for (cmd,msg) in &app.sms_list{
+                    let rest = cmd.trim().strip_prefix("+CMGL:").expect("Invalid CESQ format");
+                    let sss=rest.replace("\"","").trim().to_string();
+                    let parts: Vec<&str> = sss.split(',').collect();
+                    body.row(25., |mut row|{
+                        row.col(|ui| { 
+                            ui.label(RichText::new(parts[0].trim()).size(app.menu_ctl.feild_font_size).color(app.menu_ctl.value_color));
+                        });
+                        row.col(|ui| { 
+                            ui.label(RichText::new(parts[1].trim()).size(app.menu_ctl.feild_font_size).color(app.menu_ctl.value_color));
+                        });
+                        row.col(|ui| {
+                            ui.label(RichText::new(parts[2].trim()).size(app.menu_ctl.feild_font_size).color(app.menu_ctl.value_color));
+                            });
+                        row.col(|ui| {
+                            ui.label(RichText::new(parts[4].trim()).size(app.menu_ctl.feild_font_size).color(app.menu_ctl.value_color));
+                            });
+                        row.col(|ui| {
+                            ui.label(RichText::new(parts[5].trim()).size(app.menu_ctl.feild_font_size).color(app.menu_ctl.value_color));
+                            });
+                        row.col(|ui| {
+                            ui.label(RichText::new(msg).size(app.menu_ctl.feild_font_size).color(app.menu_ctl.value_color));
+                            });
+            
                     });
                 }
             });
-            for (cmd,msg) in &app.sms_list{
-                ui.label(cmd);
-                ui.label(msg);
-            }
+        
+        ui.add_space(10.0);
+        
+                // for (name, age, job) in [("nan", "30", "stu"), ("kim", "25", "de"), ("lee", "28", "plan")] {
+                //     body.row(18.0, |mut row| {
+                //         row.col(|ui| { ui.label(name); });
+                //         row.col(|ui| { ui.label(age); });
+                //         row.col(|ui| { ui.label(job); });
+                //     });
+                // }
+         
+            // for (cmd,msg) in &app.sms_list{
+            //     ui.label(cmd);
+            //     ui.label(msg);
+            // }
         message_pop_menu(app,ui,ctx);
  
     })

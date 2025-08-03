@@ -43,7 +43,7 @@ impl Csq {
 }
 
 
-
+#[derive(Clone)]
 pub struct  Cesq {
     pub rxlev: u8, //GSM (2G) 수신 레벨
     pub ber:u8,  //Bit Error Rate 2G 비트오류율

@@ -23,5 +23,6 @@ gpio-cdev = "0.6.0"
 better_default = { workspace = true }
 regex = { workspace = true }
 ucs2 = "0.3.3"
+egui_plot = { workspace = true }
 
 

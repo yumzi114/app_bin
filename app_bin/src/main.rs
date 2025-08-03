@@ -130,7 +130,10 @@ impl eframe::App for RasApp {
             match self.lte_reader_task.pending_cmgl.as_mut(){
                 Some(header)=>{
                     let combined = (header.clone(), l_msg.clone());
-                    self.sms_list.push(combined); // (헤더, 본문) 형태 저장
+                    if !self.sms_list.contains(&combined){
+                        self.sms_list.push(combined);
+                    }
+                     // (헤더, 본문) 형태 저장
                     // *header = String::new();       // 상태 초기화
                     self.lte_reader_task.pending_cmgl = None;
                 },
@@ -141,7 +144,9 @@ impl eframe::App for RasApp {
                             self.lte_reader_task.last_csq=Some(Csq::new(msg.clone()));
                         },
                         msg if msg.starts_with("+CESQ: ") => {
-                            self.lte_reader_task.last_cesq=Some(Cesq::new(msg.clone()));
+                            let cesq = Cesq::new(msg.clone());
+                            self.lte_reader_task.check_push_cesq(cesq.clone());
+                            self.lte_reader_task.last_cesq=Some(cesq);
                         },
                         msg if msg.starts_with("+CGPADDR: ") => {
                             self.lte_reader_task.last_cgpaddr=Some(CgpAddr::new(msg.clone()));
