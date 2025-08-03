@@ -8,7 +8,7 @@ use bytes::BufMut;
 use bytes::BytesMut;
 use tokio_util::codec::Decoder;
 use tokio_util::codec::Encoder;
-
+use ucs2::decode as ucs2_decode;
 use ublox::PacketRef;
 use ublox::{Parser};
 // use nmea::Nmea;
@@ -61,18 +61,18 @@ impl Decoder for LTELineCodec {
             } else if line.ends_with(b"\n") {
                 line.truncate(line.len() - 1);
             }
-
+            // let decoded: String = ucs2_decode(&ucs2_bytes).collect();
             match std::str::from_utf8(&line) {
                 Ok(s) => {
                     let trimmed = s.trim();
                     if trimmed.is_empty() {
                         Ok(None) // 빈 줄은 무시
                     } else {
-                        let trimmed= trimmed.to_string().replace("OK", "");
+                        // let trimmed= trimmed.to_string().replace("OK", "");
                         if trimmed.is_empty() {
                             Ok(None) // ✅ OK만 있거나 제거 후 빈 문자열이면 무시
                         } else {
-                            Ok(Some(trimmed))
+                            Ok(Some(trimmed.to_string()))
                         }
                         // Ok(Some(trimmed.to_string()))
                     }

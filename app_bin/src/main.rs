@@ -1,20 +1,20 @@
 use std::sync::atomic::Ordering;
 
-use chrono::Local;
+use chrono::{DateTime, Local};
 use eframe::egui::{self, Align, Color32, Layout, RichText, ViewportBuilder};
 use better_default::Default;
 use crate::{
     components::{layout::{feild_font_edit, menu_button_layout, sub_menu_open}, setup_custom_fonts},
     contents::{
-        car_page::car_content_view, connect_bt, gps_page::gps_content_view,
-        lte_page::lte_content_view, main_page::main_content_view, rf_page::rf_content_view,
+        car_adapter::car_content_view, connect_bt, gps_adapter::gps_content_view,
+        lte_adapter::lte_content_view, main_page::main_content_view, rf_page::rf_content_view,
     },
 };
 mod components;
 mod contents;
 use app_lib::ctr_mod::{
     gps_ctr::{self, gps_reader_thread, Gps_Reader_task},
-    lte_ctr::{lte_reader_thread, lte_sender_thread, Cesq, CgpAddr, Cnum, Csq, Lte_Reader_Task},
+    lte_ctr::{lte_cmd::{Cesq, CgpAddr, Cnum, Csq, CMGF}, lte_reader_thread, lte_sender_thread, Lte_Reader_Task},
 };
 
 
@@ -27,7 +27,13 @@ struct Menu_Ctl{
     #[default(Color32::from_rgb(255, 0, 0))]
     value_color:Color32,
     #[default(24.)]
-    feild_font_size:f32
+    feild_font_size:f32,
+    #[default(false)]
+    test_sms_nt:bool,
+    #[default(true)]
+    test_sms_pop_nt:bool,
+    #[default(String::new())]
+    test_gps_str:String,
     // #[default(false)]
     // lte_side:bool,
     // lte_anim:f32,
@@ -72,11 +78,12 @@ async fn main() {
                 app.gps_reader_task.msg_tx.clone(),
                 app.gps_reader_task.is_running.clone(),
                 app.gps_reader_task.nmea.clone(),
-                app.gps_reader_task.power_pin.clone(),
+                // app.gps_reader_task.power_pin.clone(),
                 app.gps_reader_task.start_time.clone(),
             );
             lte_reader_thread(app.lte_reader_task.msg_tx.clone());
             lte_sender_thread(
+                app.lte_reader_task.app_rx.clone()
                 // app.lte_reader_task.msg_tx.clone()
             );
             egui_extras::install_image_loaders(&cc.egui_ctx);
@@ -93,6 +100,7 @@ struct RasApp {
     lte_reader_task: Lte_Reader_Task,
     menu_ctl: Menu_Ctl,
     test_list: Vec<String>,
+    sms_list:Vec<(String,String)>
 }
 
 impl RasApp {
@@ -103,6 +111,7 @@ impl RasApp {
             lte_reader_task: Lte_Reader_Task::new(),
             menu_ctl: Menu_Ctl::default(),
             test_list: vec![],
+            sms_list:vec![]
         }
         // Self::default()
     }
@@ -113,22 +122,56 @@ impl eframe::App for RasApp {
         ctx.request_repaint();
         
         catppuccin_egui::set_theme(&ctx, catppuccin_egui::FRAPPE);
+        if let Ok(msg) = self.gps_reader_task.msg_rx.try_recv() {
+            self.menu_ctl.test_gps_str=msg;
+            // ui.label(RichText::new(msg).size(self.menu_ctl.feild_font_size).color(self.menu_ctl.value_color).underline());
+        }
         if let Ok(l_msg) = self.lte_reader_task.msg_rx.try_recv() {
-            match l_msg{
-                msg if msg.starts_with("+CSQ: ") => {
-                    self.lte_reader_task.last_csq=Some(Csq::new(msg.clone()));
+            match self.lte_reader_task.pending_cmgl.as_mut(){
+                Some(header)=>{
+                    let combined = (header.clone(), l_msg.clone());
+                    self.sms_list.push(combined); // (헤더, 본문) 형태 저장
+                    // *header = String::new();       // 상태 초기화
+                    self.lte_reader_task.pending_cmgl = None;
                 },
-                msg if msg.starts_with("+CESQ: ") => {
-                    self.lte_reader_task.last_cesq=Some(Cesq::new(msg.clone()));
-                },
-                msg if msg.starts_with("+CGPADDR: ") => {
-                    self.lte_reader_task.last_cgpaddr=Some(CgpAddr::new(msg.clone()));
-                },
-                msg if msg.starts_with("+CNUM: ") => {
-                    self.lte_reader_task.last_cnum=Some(Cnum::new(msg.clone()));
-                },
-                _=>{self.test_list.push(l_msg);}
+                None => {
+                    match l_msg{
+                
+                        msg if msg.starts_with("+CSQ: ") => {
+                            self.lte_reader_task.last_csq=Some(Csq::new(msg.clone()));
+                        },
+                        msg if msg.starts_with("+CESQ: ") => {
+                            self.lte_reader_task.last_cesq=Some(Cesq::new(msg.clone()));
+                        },
+                        msg if msg.starts_with("+CGPADDR: ") => {
+                            self.lte_reader_task.last_cgpaddr=Some(CgpAddr::new(msg.clone()));
+                        },
+                        msg if msg.starts_with("+CNUM: ") => {
+                            self.lte_reader_task.last_cnum=Some(Cnum::new(msg.clone()));
+                        },
+                        msg if msg.starts_with("+CMGF: ") => {
+                            self.lte_reader_task.cmgf=CMGF::new(msg.clone());
+                        },
+                        msg if msg.starts_with("+CMGL: ") => {
+                            self.lte_reader_task.pending_cmgl = Some(msg.clone());
+
+                            // self.test_list.push(msg);
+                        },
+                        msg if msg.starts_with("+CPMS: ") => {
+                            // self.test_list.push(msg);
+                        },
+                        msg if msg.starts_with("OK") => {
+                            // self.lte_reader_task.last_csq=Some(Csq::new(msg.clone()));
+                        },
+                        _=>{
+                            self.test_list.push(l_msg);
+                            // self.test_list.push(l_msg);
+                        }
+                    }
+
+                }
             }
+            
             // ui.label(l_msg);
         }
         egui::TopBottomPanel::top("time_head")

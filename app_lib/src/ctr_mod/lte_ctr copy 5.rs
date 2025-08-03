@@ -4,7 +4,7 @@ use chrono::{DateTime, Local};
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use futures_util::{SinkExt, StreamExt};
 use regex::Regex;
-use tokio::{io::{split, AsyncWriteExt}, runtime::Runtime, sync::{mpsc, oneshot::{self, channel, Receiver as T_Receiver, Sender as T_Sender}}, time::sleep};
+use tokio::{io::{split, AsyncWriteExt}, runtime::Runtime, sync::{mpsc, oneshot::{self, channel, Receiver as T_Receiver, Sender as T_Sender}}, time::{sleep, Instant}};
 use tokio_serial::{SerialPortBuilderExt, SerialStream};
 #[cfg(unix)]
 use tokio_serial::{SerialPort, StopBits};
@@ -22,8 +22,7 @@ pub struct Lte_Reader_Task{
     pub network_timeover:u8,
     pub cmgf:CMGF,
     pub app_tx:Sender<String>,
-    pub app_rx:Receiver<String>,
-    pub pending_cmgl: Option<String>
+    pub app_rx:Receiver<String>
 }
 impl Lte_Reader_Task{
     pub fn new()->Self{
@@ -35,11 +34,9 @@ impl Lte_Reader_Task{
         let network_timeover=3;
         let cmgf = CMGF::default();
         let (app_tx, app_rx) = unbounded::<String>();
-        let pending_cmgl =  None;
-
         // let
         Self { 
-            msg_tx,msg_rx,last_csq,last_cesq,last_cnum,last_cgpaddr,network_timeover,cmgf,app_tx, app_rx,pending_cmgl
+            msg_tx,msg_rx,last_csq,last_cesq,last_cnum,last_cgpaddr,network_timeover,cmgf,app_tx, app_rx
          }
 
     }
@@ -105,58 +102,90 @@ pub fn lte_sender_thread(
             let (mut tx,rx) = Framed::new(serial, LTELineCodec).split();
             let (line_tx, mut line_rx) = mpsc::unbounded_channel::<String>();
             let (cmd_tx, mut cmd_rx) = mpsc::channel::<(String, oneshot::Sender<Vec<String>>)>(10);
-
+            let mut last_activity = Instant::now();
+            
             let writer_task = async move {
                 while let Some((cmd, resp_tx)) = cmd_rx.recv().await {
                     tx.send(cmd).await.unwrap();
+                    last_activity = Instant::now();
+
                 }
             };
             tokio::spawn(writer_task);
+            
 
-            //통신 체크부분
             let cmd_tx_clone = cmd_tx.clone();
             tokio::spawn(async move {
                 loop {
-                    send_cmd(&cmd_tx_clone, "AT+CNUM").await;
+                    if last_activity.elapsed() > Duration::from_secs(2) {
+                        send_cmd(&cmd_tx_clone, "AT+CNUM").await;
+                    };
                     tokio::time::sleep(Duration::from_secs(10)).await;
                 }
             });
             let cmd_tx_clone = cmd_tx.clone();
             tokio::spawn(async move {
                 loop {
-                    send_cmd(&cmd_tx_clone, "AT+CGPADDR=1").await;
+                    if last_activity.elapsed() > Duration::from_secs(2) {
+                        send_cmd(&cmd_tx_clone, "AT+CGPADDR=1").await;
+                    }
                     tokio::time::sleep(Duration::from_secs(10)).await;
                 }
             });
             let cmd_tx_clone = cmd_tx.clone();
             tokio::spawn(async move {
                 loop {
-                    send_cmd(&cmd_tx_clone, "AT+CESQ").await;
+                    if last_activity.elapsed() > Duration::from_secs(2) {
+                        send_cmd(&cmd_tx_clone, "AT+CESQ").await;
+                    };
                     tokio::time::sleep(Duration::from_millis(500)).await;
                 }
             });
             let cmd_tx_clone = cmd_tx.clone();
             tokio::spawn(async move {
                 loop {
-                    send_cmd(&cmd_tx_clone, "AT+CSQ").await;
-                    tokio::time::sleep(Duration::from_millis(500)).await;
-                }
-            });
-            //SMS 및 TEX|PDU 모드체크
-            let cmd_tx_clone = cmd_tx.clone();
-            tokio::spawn(async move {
-                loop {
-                    send_cmd(&cmd_tx_clone, "AT+CMGF?").await;
+                    if last_activity.elapsed() > Duration::from_secs(2) {
+                        send_cmd(&cmd_tx_clone, "AT+CSQ").await;
+                    };
                     tokio::time::sleep(Duration::from_millis(500)).await;
                 }
             });
             let cmd_tx_clone = cmd_tx.clone();
             tokio::spawn(async move {
                 loop {
-                    send_cmd(&cmd_tx_clone, "AT+CPMS?").await;
-                    tokio::time::sleep(Duration::from_secs(1)).await;
+                    if last_activity.elapsed() > Duration::from_secs(2) {
+                        send_cmd(&cmd_tx_clone, "AT+CMGF?").await;
+                    };
+                    tokio::time::sleep(Duration::from_millis(500)).await;
                 }
             });
+            // tokio::spawn(async move {
+            //     loop {
+            //         if last_activity.elapsed() > Duration::from_secs(2) {
+            //             send_cmd(&cmd_tx_clone, "AT+CNUM").await;
+            //             send_cmd(&cmd_tx_clone, "AT+CGPADDR=1").await;
+            //             //문자
+            //             send_cmd(&cmd_tx_clone, "AT+CPMS?").await;
+            //         };
+                    
+            //         tokio::time::sleep(Duration::from_secs(10)).await;
+            //     }
+            // });
+            
+            // let cmd_tx_clone = cmd_tx.clone();
+            // tokio::spawn(async move {
+            //     loop {
+            //         if last_activity.elapsed() > Duration::from_secs(2) {
+            //             send_cmd(&cmd_tx_clone, "AT+CESQ").await;
+            //             send_cmd(&cmd_tx_clone, "AT+CSQ").await;
+            //             //모드확인
+            //             send_cmd(&cmd_tx_clone, "AT+CMGF?").await;
+            //         };
+                    
+            //         tokio::time::sleep(Duration::from_secs(1)).await;
+            //     }
+            // });
+            
             let cmd_tx_clone = cmd_tx.clone();
             loop{
                 if let Ok(msg) = app_rx.try_recv() {

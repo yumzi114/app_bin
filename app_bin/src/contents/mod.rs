@@ -1,6 +1,6 @@
-pub mod gps_page;
-pub mod lte_page;
-pub mod car_page;
+pub mod gps_adapter;
+pub mod lte_adapter;
+pub mod car_adapter;
 pub mod rf_page;
 pub mod main_page;
 pub mod lte_sub_page;
@@ -20,17 +20,18 @@ pub fn connect_bt(app:&mut RasApp, ui: &mut Ui)->InnerResponse<()>{
             match app.gps_reader_task.is_running.load(Ordering::Relaxed) {
                 true=>{
                     if ui.add_sized([50.0, 50.0], egui::ImageButton::new(include_image!("../../../assets/gps_true.png")).frame(false)).clicked(){
-                        app.gps_reader_task.is_running.store(false,Ordering::Release);
+                        // app.gps_reader_task.is_running.store(false,Ordering::Release);
                     }
                 },
                 false=>{
                     if ui.add_sized([50.0, 50.0], egui::ImageButton::new(include_image!("../../../assets/gps_false.png")).frame(false)).clicked(){
-                        app.gps_reader_task.is_running.store(true,Ordering::Release);
+                        // app.gps_reader_task.is_running.store(true,Ordering::Release);
                     }
                 }
             } 
+            //네트워크 타임아웃 체크
             if let Some(csq)=&app.lte_reader_task.last_csq{
-                if csq.time > Local::now() - Duration::seconds(1){
+                if csq.time > Local::now() - Duration::seconds(app.lte_reader_task.network_timeover as i64){
                     ui.add_sized([50.0, 50.0], Image::new(include_image!("../../../assets/wifi_true.png")));
                 }else{
                     app.lte_reader_task.last_csq=None;
