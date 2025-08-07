@@ -1,4 +1,4 @@
-use app_lib::ctr_mod::lte_ctr::lte_cmd::CMGF;
+// use app_lib::ctr_mod::lte_ctr::lte_cmd::CMGF;
 use eframe::egui::{self, color_picker::color_edit_button_srgba, Align, Color32, CornerRadius, InnerResponse, Layout, Response, RichText, Stroke, StrokeKind, Ui, Window};
 use core::mem::discriminant;
 use crate::{App_Menu, RasApp};
@@ -315,8 +315,8 @@ pub fn message_pop_menu(app:&mut RasApp, ui: &mut Ui,ctx: &egui::Context) {
                             .stroke(egui::Stroke::new(1.0, egui::Color32::WHITE)) 
                     ).clicked() {
                     }
-                    let d_str = if app.lte_reader_task.cmgf==CMGF::TEXT{"CHANGE LTE SENSOR DPU MODE"}else{"CHANGE LTE SENSOR TEXT MODE"};
-                    ui.label(RichText::new(d_str).size(15.));
+                    // let d_str = if app.lte_reader_task.cmgf==CMGF::TEXT{"CHANGE LTE SENSOR DPU MODE"}else{"CHANGE LTE SENSOR TEXT MODE"};
+                    // ui.label(RichText::new(d_str).size(15.));
                     // ui.label(d_str);
                     ui.add_space(25.);
                     // if ui.button("LTE MODE CHANGE").clicked() {}
@@ -326,7 +326,7 @@ pub fn message_pop_menu(app:&mut RasApp, ui: &mut Ui,ctx: &egui::Context) {
                             .stroke(egui::Stroke::new(1.0, egui::Color32::WHITE)) 
                     ).clicked() {
                         // let asdad = String::new()
-                        app.lte_reader_task.app_tx.send("AT+CMGL=\"ALL\"".to_string()).unwrap();
+                        // app.lte_reader_task.app_tx.send("AT+CMGL=\"ALL\"".to_string()).unwrap();
                     }
                     // ui.label("🔃UPDATE RECEIVED MESSAGE");
                     ui.label(RichText::new("🔃UPDATE RECEIVED MESSAGE").size(15.));

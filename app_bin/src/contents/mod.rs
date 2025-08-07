@@ -17,31 +17,28 @@ use crate::RasApp;
 pub fn connect_bt(app:&mut RasApp, ui: &mut Ui)->InnerResponse<()>{
     ui.vertical_centered_justified(|ui|{
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-            match app.gps_reader_task.is_running.load(Ordering::Relaxed) {
-                true=>{
+            
+            match (app.board_task.protocol.gps_lat,app.board_task.protocol.gps_lat) {
+                (lat, lon) if lat > 0.0 && lon > 0.0 =>{
                     if ui.add_sized([50.0, 50.0], egui::ImageButton::new(include_image!("../../../assets/gps_true.png")).frame(false)).clicked(){
                         // app.gps_reader_task.is_running.store(false,Ordering::Release);
                     }
                 },
-                false=>{
+                _=>{
                     if ui.add_sized([50.0, 50.0], egui::ImageButton::new(include_image!("../../../assets/gps_false.png")).frame(false)).clicked(){
                         // app.gps_reader_task.is_running.store(true,Ordering::Release);
                     }
                 }
             } 
-            //네트워크 타임아웃 체크
-            if let Some(csq)=&app.lte_reader_task.last_csq{
-                if csq.time > Local::now() - Duration::seconds(app.lte_reader_task.network_timeover as i64){
+            match app.board_task.protocol.rssi{
+                rssi if rssi > 0=>{
                     ui.add_sized([50.0, 50.0], Image::new(include_image!("../../../assets/wifi_true.png")));
-                }else{
-                    app.lte_reader_task.last_csq=None;
                 }
-                // if csq.time
-                // let asd =Local::now()+Duration::seconds(10);
+                _=>{
+                    ui.add_sized([50.0, 50.0], Image::new(include_image!("../../../assets/wifi_false.png")));
+                }
             }
-            else{
-                ui.add_sized([50.0, 50.0], Image::new(include_image!("../../../assets/wifi_false.png")));
-            }
+            
             
             
         });

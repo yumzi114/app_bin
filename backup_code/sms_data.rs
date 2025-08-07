@@ -1,3 +1,4 @@
+use app_lib::ctr_mod::lte_ctr::lte_cmd::CMGF;
 use eframe::egui::{self, vec2, Align, Align2, Area, Color32, CornerRadius, Frame, InnerResponse, Layout, Margin, Rect, RichText, Rounding, SidePanel, Stroke, Ui};
 use egui::{StrokeKind};
 use egui_extras::{Column, TableBuilder};
@@ -14,7 +15,7 @@ pub fn lte_sub_sms_view(app:&mut RasApp, ui: &mut Ui,ctx: &egui::Context)->Inner
     ui.vertical_centered(|ui|{
         // ui.label("SMS");
         ui.heading(RichText::new("MESSAGE LIST").size(35.).color(Color32::from_rgb(72, 245, 66)).underline());
-        // let d_str = if app.lte_reader_task.cmgf==CMGF::TEXT{"If you are not in the message list, refresh the message."}else {"LTE module is PDU MODE\nchecking the sensor, refresh the message to retrieve it."};
+        let d_str = if app.lte_reader_task.cmgf==CMGF::TEXT{"If you are not in the message list, refresh the message."}else {"LTE module is PDU MODE\nchecking the sensor, refresh the message to retrieve it."};
         
         message_pop_button(app,ui,ctx);
         
@@ -23,7 +24,7 @@ pub fn lte_sub_sms_view(app:&mut RasApp, ui: &mut Ui,ctx: &egui::Context)->Inner
         //     app.menu_ctl.test_sms_nt = !app.menu_ctl.test_sms_nt;
         // }
         // let mode_str = if app.lte_reader_task.cmgf==CMGF::TEXT{"TEXT"}else {"PDU"};
-        // ui.label(RichText::new(d_str).strong().size(15.0));
+        ui.label(RichText::new(d_str).strong().size(15.0));
         
         TableBuilder::new(ui)
             .striped(true) 

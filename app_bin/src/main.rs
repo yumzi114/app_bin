@@ -12,10 +12,7 @@ use crate::{
 };
 mod components;
 mod contents;
-use app_lib::ctr_mod::{
-    gps_ctr::{self, gps_reader_thread, Gps_Reader_task},
-    lte_ctr::{lte_cmd::{Cesq, CgpAddr, Cnum, Csq, CMGF}, lte_reader_thread, lte_sender_thread, Lte_Reader_Task},
-};
+use app_lib::ctr_mod::board_ctl::{board_reader_thread, Board_task};
 
 
 #[derive(Default,PartialEq)]
@@ -74,18 +71,19 @@ async fn main() {
             let mut app = RasApp::new(cc);
             // app.gps_reader_task.runner().unwrap();
             // gps_reader_thread(app.gps_reader_task.msg_tx.clone(), app.gps_reader_task.closer_rx.clone());
-            gps_reader_thread(
-                app.gps_reader_task.msg_tx.clone(),
-                app.gps_reader_task.is_running.clone(),
-                app.gps_reader_task.nmea.clone(),
-                // app.gps_reader_task.power_pin.clone(),
-                app.gps_reader_task.start_time.clone(),
-            );
-            lte_reader_thread(app.lte_reader_task.msg_tx.clone());
-            lte_sender_thread(
-                app.lte_reader_task.app_rx.clone()
-                // app.lte_reader_task.msg_tx.clone()
-            );
+            // gps_reader_thread(
+            //     app.gps_reader_task.msg_tx.clone(),
+            //     app.gps_reader_task.is_running.clone(),
+            //     app.gps_reader_task.nmea.clone(),
+            //     // app.gps_reader_task.power_pin.clone(),
+            //     app.gps_reader_task.start_time.clone(),
+            // );
+            // lte_reader_thread(app.lte_reader_task.msg_tx.clone());
+            // lte_sender_thread(
+            //     app.lte_reader_task.app_rx.clone()
+            //     // app.lte_reader_task.msg_tx.clone()
+            // );
+            board_reader_thread(app.board_task.protocol_tx.clone());
             egui_extras::install_image_loaders(&cc.egui_ctx);
             Ok(Box::<RasApp>::new(app))
         }),
@@ -96,8 +94,7 @@ async fn main() {
 // #[derive(Clone)]
 // #[derive(Clone, Copy, Default)]
 struct RasApp {
-    gps_reader_task: Gps_Reader_task,
-    lte_reader_task: Lte_Reader_Task,
+    board_task:Board_task,
     menu_ctl: Menu_Ctl,
     test_list: Vec<String>,
     sms_list:Vec<(String,String)>
@@ -107,8 +104,7 @@ impl RasApp {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         setup_custom_fonts(&cc.egui_ctx);
         RasApp {
-            gps_reader_task: Gps_Reader_task::new(),
-            lte_reader_task: Lte_Reader_Task::new(),
+            board_task: Board_task::new(),
             menu_ctl: Menu_Ctl::default(),
             test_list: vec![],
             sms_list:vec![]
@@ -122,63 +118,65 @@ impl eframe::App for RasApp {
         ctx.request_repaint();
         
         catppuccin_egui::set_theme(&ctx, catppuccin_egui::FRAPPE);
-        if let Ok(msg) = self.gps_reader_task.msg_rx.try_recv() {
-            self.menu_ctl.test_gps_str=msg;
+        if let Ok(pro) = self.board_task.protocol_rx.try_recv() {
+            self.board_task.protocol=pro;
+            let asdasd = format!("{:?}",pro);
+            self.test_list.push(asdasd);
             // ui.label(RichText::new(msg).size(self.menu_ctl.feild_font_size).color(self.menu_ctl.value_color).underline());
-        }
-        if let Ok(l_msg) = self.lte_reader_task.msg_rx.try_recv() {
-            match self.lte_reader_task.pending_cmgl.as_mut(){
-                Some(header)=>{
-                    let combined = (header.clone(), l_msg.clone());
-                    if !self.sms_list.contains(&combined){
-                        self.sms_list.push(combined);
-                    }
-                     // (헤더, 본문) 형태 저장
-                    // *header = String::new();       // 상태 초기화
-                    self.lte_reader_task.pending_cmgl = None;
-                },
-                None => {
-                    match l_msg{
+        };
+        // if let Ok(l_msg) = self.lte_reader_task.msg_rx.try_recv() {
+        //     match self.lte_reader_task.pending_cmgl.as_mut(){
+        //         Some(header)=>{
+        //             let combined = (header.clone(), l_msg.clone());
+        //             if !self.sms_list.contains(&combined){
+        //                 self.sms_list.push(combined);
+        //             }
+        //              // (헤더, 본문) 형태 저장
+        //             // *header = String::new();       // 상태 초기화
+        //             self.lte_reader_task.pending_cmgl = None;
+        //         },
+        //         None => {
+        //             match l_msg{
                 
-                        msg if msg.starts_with("+CSQ: ") => {
-                            self.lte_reader_task.last_csq=Some(Csq::new(msg.clone()));
-                        },
-                        msg if msg.starts_with("+CESQ: ") => {
-                            let cesq = Cesq::new(msg.clone());
-                            self.lte_reader_task.check_push_cesq(cesq.clone());
-                            self.lte_reader_task.last_cesq=Some(cesq);
-                        },
-                        msg if msg.starts_with("+CGPADDR: ") => {
-                            self.lte_reader_task.last_cgpaddr=Some(CgpAddr::new(msg.clone()));
-                        },
-                        msg if msg.starts_with("+CNUM: ") => {
-                            self.lte_reader_task.last_cnum=Some(Cnum::new(msg.clone()));
-                        },
-                        msg if msg.starts_with("+CMGF: ") => {
-                            self.lte_reader_task.cmgf=CMGF::new(msg.clone());
-                        },
-                        msg if msg.starts_with("+CMGL: ") => {
-                            self.lte_reader_task.pending_cmgl = Some(msg.clone());
+        //                 msg if msg.starts_with("+CSQ: ") => {
+        //                     self.lte_reader_task.last_csq=Some(Csq::new(msg.clone()));
+        //                 },
+        //                 msg if msg.starts_with("+CESQ: ") => {
+        //                     let cesq = Cesq::new(msg.clone());
+        //                     self.lte_reader_task.check_push_cesq(cesq.clone());
+        //                     self.lte_reader_task.last_cesq=Some(cesq);
+        //                 },
+        //                 msg if msg.starts_with("+CGPADDR: ") => {
+        //                     self.lte_reader_task.last_cgpaddr=Some(CgpAddr::new(msg.clone()));
+        //                 },
+        //                 msg if msg.starts_with("+CNUM: ") => {
+        //                     self.lte_reader_task.last_cnum=Some(Cnum::new(msg.clone()));
+        //                 },
+        //                 msg if msg.starts_with("+CMGF: ") => {
+        //                     self.lte_reader_task.cmgf=CMGF::new(msg.clone());
+        //                 },
+        //                 msg if msg.starts_with("+CMGL: ") => {
+        //                     self.lte_reader_task.pending_cmgl = Some(msg.clone());
 
-                            // self.test_list.push(msg);
-                        },
-                        msg if msg.starts_with("+CPMS: ") => {
-                            // self.test_list.push(msg);
-                        },
-                        msg if msg.starts_with("OK") => {
-                            // self.lte_reader_task.last_csq=Some(Csq::new(msg.clone()));
-                        },
-                        _=>{
-                            self.test_list.push(l_msg);
-                            // self.test_list.push(l_msg);
-                        }
-                    }
+        //                     // self.test_list.push(msg);
+        //                 },
+        //                 msg if msg.starts_with("+CPMS: ") => {
+        //                     // self.test_list.push(msg);
+        //                 },
+        //                 msg if msg.starts_with("OK") => {
+        //                     // self.lte_reader_task.last_csq=Some(Csq::new(msg.clone()));
+        //                 },
+        //                 _=>{
+        //                     self.test_list.push(l_msg);
+        //                     // self.test_list.push(l_msg);
+        //                 }
+        //             }
 
-                }
-            }
+        //         }
+        //     }
             
-            // ui.label(l_msg);
-        }
+        //     // ui.label(l_msg);
+        // }
         egui::TopBottomPanel::top("time_head")
             .show_separator_line(false)
             .show(ctx, |ui| {

@@ -2,4 +2,4 @@ target/
 /Cargo.lock
 .cargo
 assets/
-backup_code/
+# backup_code/
