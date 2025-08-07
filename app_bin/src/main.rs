@@ -119,7 +119,7 @@ impl eframe::App for RasApp {
         
         catppuccin_egui::set_theme(&ctx, catppuccin_egui::FRAPPE);
         if let Ok(pro) = self.board_task.protocol_rx.try_recv() {
-            self.board_task.protocol=pro;
+            self.board_task.self_update(pro);
             let asdasd = format!("{:?}",pro);
             self.test_list.push(asdasd);
             // ui.label(RichText::new(msg).size(self.menu_ctl.feild_font_size).color(self.menu_ctl.value_color).underline());

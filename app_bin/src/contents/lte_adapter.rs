@@ -13,17 +13,18 @@ pub fn lte_content_view(app:&mut RasApp, ui: &mut Ui,ctx: &egui::Context)->Inner
     
     match app.menu_ctl.state {
         App_Menu::LTE(0)=>{
-            ui.vertical_centered(|ui|{
-                ui.heading(RichText::new("THIS LTE_VIEW").size(45.).color(Color32::from_rgb(72, 245, 66)).underline());
-            })
+            lte_sub_net_view(app,ui,ctx)
+            // ui.vertical_centered(|ui|{
+            //     ui.heading(RichText::new("THIS LTE_VIEW").size(45.).color(Color32::from_rgb(72, 245, 66)).underline());
+            // })
         }
         App_Menu::LTE(1)=>{
             lte_sub_tracing_view(app,ui,ctx)
         }
+        // App_Menu::LTE(2)=>{
+        //     lte_sub_net_view(app,ui,ctx)
+        // }
         App_Menu::LTE(2)=>{
-            lte_sub_net_view(app,ui,ctx)
-        }
-        App_Menu::LTE(3)=>{
             lte_sub_sms_view(app,ui,ctx)
         }
         _=>{

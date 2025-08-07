@@ -1,5 +1,6 @@
-use std::thread;
+use std::{collections::VecDeque, thread};
 
+use chrono::{DateTime, Duration, Local};
 use crc::{Algorithm, Crc};
 use bytemuck::{bytes_of, from_bytes, Pod, Zeroable};
 use crossbeam_channel::{unbounded, Receiver, Sender};
@@ -30,15 +31,39 @@ pub struct Board_task{
     pub protocol:App_Protocol,
     pub protocol_tx:Sender<App_Protocol>,
     pub protocol_rx:Receiver<App_Protocol>,
+    pub rec_time:DateTime<Local>,
+    pub tracking_time:i64,
+    pub tracking_last_time:DateTime<Local>,
+    pub tracking_list:VecDeque<App_Protocol>
 }
 impl Board_task {
     pub fn new()->Board_task{
         let (protocol_tx,protocol_rx)=unbounded::<App_Protocol>();
         let protocol =App_Protocol::new();
+        let tracking_time = 1;
+        let tracking_last_time=Local::now();
+        let rec_time=Local::now();
+        let tracking_list:VecDeque<App_Protocol> = VecDeque::with_capacity(100);
         Board_task{
             protocol,
             protocol_tx,
-            protocol_rx
+            protocol_rx,
+            rec_time,
+            tracking_time,
+            tracking_last_time,
+            tracking_list
+        }
+    }
+    pub fn self_update(&mut self, pro:App_Protocol){
+        let now: DateTime<Local> = Local::now();
+        self.protocol=pro;
+        self.rec_time=now;
+        if now.signed_duration_since(self.tracking_last_time) >Duration::seconds(self.tracking_time){
+            if self.tracking_list.len()==self.tracking_list.capacity(){
+                self.tracking_list.pop_front();
+            }
+            self.tracking_list.push_back(pro);
+            self.tracking_last_time=now;
         }
     }
 }
@@ -54,11 +79,11 @@ pub struct App_Protocol{
     pub rssi:u8,
     pub rsrq:u8,
     pub rsrp:u8,
-    ip:u32,
-    ip_pid:u8,
+    pub ip:u32,
+    pub ip_pid:u8,
     // phone_num:u64,
     // phone_num_type:u8,
-    cpms:u8,
+    pub cpms:u8,
     pub gps_lat:f32,
     pub gps_lon:f32,
     checksum:u8,

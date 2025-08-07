@@ -103,27 +103,27 @@ pub fn sub_menu_window(app:&mut RasApp, ui: &mut Ui,ctx: &egui::Context){
                                     // app.menu_ctl.side_open=false;
                                 };
                                 if ui.label(
-                                    RichText::new("Tracing").size(35.)
+                                    RichText::new("Tracking").size(35.)
                                         .underline()
                                         .color(egui::Color32::from_rgba_unmultiplied(72, 245, 66, alpha))
                                 ).clicked(){
                                     app.menu_ctl.state=App_Menu::LTE(1);
                                     // app.menu_ctl.side_open=false;
                                 };
-                                if ui.label(
-                                    egui::RichText::new("NET Data").size(35.)
-                                        .underline()
-                                        .color(egui::Color32::from_rgba_unmultiplied(72, 245, 66, alpha))
-                                ).clicked(){
-                                    app.menu_ctl.state=App_Menu::LTE(2);
-                                    // app.menu_ctl.side_open=false;
-                                };
+                                // if ui.label(
+                                //     egui::RichText::new("NET Data").size(35.)
+                                //         .underline()
+                                //         .color(egui::Color32::from_rgba_unmultiplied(72, 245, 66, alpha))
+                                // ).clicked(){
+                                //     app.menu_ctl.state=App_Menu::LTE(2);
+                                //     // app.menu_ctl.side_open=false;
+                                // };
                                 if ui.label(
                                     egui::RichText::new("SMS Data").size(35.)
                                         .underline()
                                         .color(egui::Color32::from_rgba_unmultiplied(72, 245, 66, alpha))
                                 ).clicked(){
-                                    app.menu_ctl.state=App_Menu::LTE(3);
+                                    app.menu_ctl.state=App_Menu::LTE(2);
                                     // app.menu_ctl.side_open=false;
                                 };
                             },
