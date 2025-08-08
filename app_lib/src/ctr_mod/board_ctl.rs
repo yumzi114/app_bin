@@ -58,7 +58,7 @@ impl Board_task {
         let now: DateTime<Local> = Local::now();
         self.protocol=pro;
         self.rec_time=now;
-        if now.signed_duration_since(self.tracking_last_time) >Duration::seconds(self.tracking_time){
+        if now.signed_duration_since(self.tracking_last_time) >Duration::milliseconds(self.tracking_time){
             if self.tracking_list.len()==self.tracking_list.capacity(){
                 self.tracking_list.pop_front();
             }
