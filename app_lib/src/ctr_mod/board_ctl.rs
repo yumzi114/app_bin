@@ -86,6 +86,8 @@ pub struct App_Protocol{
     pub cpms:u8,
     pub gps_lat:f32,
     pub gps_lon:f32,
+    pub gps_speed_calc: f32,
+    pub gps_speed_direct: f32,
     checksum:u8,
     end:u8
 }
@@ -94,7 +96,7 @@ impl App_Protocol{
         App_Protocol{
             start:0xAF,
             cmd:0xFD,
-            len:0x13, //len ~ gps_lon byte 24byte
+            len:0x1B, //len ~ gps_lon byte 24byte
             end:0xFC,
             ..Default::default()
         }
@@ -102,14 +104,14 @@ impl App_Protocol{
     pub fn check_update(&mut self){
         let crc = Crc::<u8>::new(&CRC_8_MAXIM);
         let raw = bytemuck::bytes_of(self);
-        let result = crc.checksum(&raw[2..21]);//LEN ~ gps_lon
+        let result = crc.checksum(&raw[2..29]);//LEN ~ gps_lon
         self.checksum=result;
     }
 
     pub fn verify_crc(&self) -> bool {
         let crc = Crc::<u8>::new(&CRC_8_MAXIM);
         let raw = bytemuck::bytes_of(self);
-        let calc = crc.checksum(&raw[2..21]);
+        let calc = crc.checksum(&raw[2..29]);
         calc == self.checksum
     }
     fn parse_packet(buf: &[u8]) -> Option<App_Protocol> {

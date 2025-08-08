@@ -118,12 +118,11 @@ impl eframe::App for RasApp {
         ctx.request_repaint();
         
         catppuccin_egui::set_theme(&ctx, catppuccin_egui::FRAPPE);
-        if let Ok(pro) = self.board_task.protocol_rx.try_recv() {
+        while let Ok(pro) = self.board_task.protocol_rx.try_recv() {
             self.board_task.self_update(pro);
-            let asdasd = format!("{:?}",pro);
-            self.test_list.push(asdasd);
-            // ui.label(RichText::new(msg).size(self.menu_ctl.feild_font_size).color(self.menu_ctl.value_color).underline());
-        };
+            let log = format!("{:?}", pro);
+            // self.test_list.push(log);
+        }
         // if let Ok(l_msg) = self.lte_reader_task.msg_rx.try_recv() {
         //     match self.lte_reader_task.pending_cmgl.as_mut(){
         //         Some(header)=>{

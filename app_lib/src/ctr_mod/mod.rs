@@ -27,17 +27,37 @@ impl Decoder for BoardLineCodec {
     type Item = App_Protocol;
     type Error = io::Error;
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
+        let packet_size = core::mem::size_of::<App_Protocol>();
+
         let newline = src.as_ref().iter().position(|b| *b == 0xFC);
-        if let Some(n) = newline {
-            let line = src.split_to(n + 1);
-            let line_list = line.to_vec();
-            if line_list[0]==0xAF&&line_list[2]==0x13{
-                let pkt = bytemuck::from_bytes::<App_Protocol>(&line_list[..]);
-                if pkt.verify_crc(){
-                    // let text = format!("{:?}",pkt);
-                    return Ok(Some(pkt.clone()));
+        if let Some(pos) = newline {
+            if pos + 1 < packet_size {
+                // 너무 짧음: 쓰레기 → sync 복구
+                src.advance(pos + 1);
+                return Ok(None);
+            }
+            let line = src.split_to(pos + 1);
+            if line.len() != packet_size {
+                // 크기 안 맞음 → sync 복구
+                return Ok(None);
+            }
+            if line[0] == 0xAF {
+                let pkt = bytemuck::from_bytes::<App_Protocol>(&line[..]);
+                if pkt.verify_crc() {
+                    return Ok(Some(*pkt));
                 }
             }
+            src.advance(1);
+
+            // let line = src.split_to(n + 1);
+            // let line_list = line.to_vec();
+            // if line_list[0]==0xAF&&line_list[2]==0x1B&&line_list.len() == core::mem::size_of::<App_Protocol>(){
+            //     let pkt = bytemuck::from_bytes::<App_Protocol>(&line_list[..]);
+            //     if pkt.verify_crc(){
+            //         // let text = format!("{:?}",pkt);
+            //         return Ok(Some(pkt.clone()));
+            //     }
+            // }
         }
         Ok(None)
     }
