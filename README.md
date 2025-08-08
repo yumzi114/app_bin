@@ -4,7 +4,7 @@ systemctl --user stop app_bin.service
 sudo stty -F /dev/ttyAMA2 raw -echo -icanon min 1 time 1
 
 for rasberry
-![APP VIEW](https://github.com/user-attachments/assets/adb9b981-bcc4-4d2a-ac70-3d6570de7a7b)
+![APP VIEW](https://<video src="https://github-production-user-asset-6210df.s3.amazonaws.com/95202277/473815873-adb9b981-bcc4-4d2a-ac70-3d6570de7a7b.mp4" controls></video>)
 todo!(RF, CAN)
 ----------------------------------------------
 header
