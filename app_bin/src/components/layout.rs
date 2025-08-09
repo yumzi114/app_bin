@@ -49,7 +49,7 @@ pub fn feild_font_edit(ui: &mut Ui,  app:&mut RasApp)-> InnerResponse<()> {
         ui.spacing_mut().interact_size = egui::vec2(60.0, 30.0);
         color_edit_button_srgba(ui, &mut app.menu_ctl.value_color, egui::color_picker::Alpha::BlendOrAdditive);
         
-        ui.label(RichText::new("Feild Color : ").size(25.).color(Color32::from_rgb(255, 255, 255)));
+        ui.label(RichText::new("Field Color : ").size(25.).color(Color32::from_rgb(255, 255, 255)));
         
         ui.add(egui::Slider::new(&mut app.menu_ctl.feild_font_size, 8.0..=35.0)
         .text(RichText::new("Font Size : ").size(25.).color(Color32::from_rgb(255, 255, 255))));
@@ -76,7 +76,21 @@ pub fn sub_menu_window(app:&mut RasApp, ui: &mut Ui,ctx: &egui::Context){
     }
     if app.menu_ctl.anim > 0.01 {
         let full_width = 220.0 * app.menu_ctl.anim;
-            Window::new("SIDE MENU")
+        let mut open = app.menu_ctl.side_open;
+        // let screen = ctx.screen_rect();
+        // let clicked_bg = egui::Area::new("menu_dismiss_bg".into())
+        //     .order(egui::Order::Middle) // Window보다 아래 레이어
+        //     .interactable(true)
+        //     .fixed_pos(egui::pos2(0.0, 0.0))
+        //     .show(ctx, |ui| {
+        //         // 화면 전체를 클릭 감지
+        //         ui.allocate_rect(screen, egui::Sense::click()).clicked()
+        //     })
+        //     .inner;
+        // if clicked_bg {
+        //     app.menu_ctl.side_open = false;
+        // }
+        let inner = Window::new("SIDE MENU")
                 .collapsible(false)
                 .resizable(false)
                 .title_bar(false)
@@ -110,14 +124,7 @@ pub fn sub_menu_window(app:&mut RasApp, ui: &mut Ui,ctx: &egui::Context){
                                     app.menu_ctl.state=App_Menu::LTE(1);
                                     // app.menu_ctl.side_open=false;
                                 };
-                                // if ui.label(
-                                //     egui::RichText::new("NET Data").size(35.)
-                                //         .underline()
-                                //         .color(egui::Color32::from_rgba_unmultiplied(72, 245, 66, alpha))
-                                // ).clicked(){
-                                //     app.menu_ctl.state=App_Menu::LTE(2);
-                                //     // app.menu_ctl.side_open=false;
-                                // };
+                     
                                 if ui.label(
                                     egui::RichText::new("SMS Data").size(35.)
                                         .underline()
@@ -158,6 +165,21 @@ pub fn sub_menu_window(app:&mut RasApp, ui: &mut Ui,ctx: &egui::Context){
                     });
                     
                 });
+                if let Some(inner) = inner {
+                    let win_rect = inner.response.rect;
+                    let clicked_outside = ctx.input(|i| {
+                        if i.pointer.any_pressed() {
+                            if let Some(pos) = i.pointer.interact_pos() {
+                                !win_rect.contains(pos)
+                            } else { false }
+                        } else { false }
+                    });
+                    if clicked_outside {
+                        open = false;
+                    }
+                }
+                app.menu_ctl.side_open = open;
+
     }
 }
 

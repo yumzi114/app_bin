@@ -1,5 +1,6 @@
-use eframe::egui;
+use eframe::egui::{self, Context};
 pub mod layout;
+pub mod speed_layout;
 pub fn setup_custom_fonts(ctx: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();
     fonts.font_data.insert(
@@ -62,4 +63,41 @@ pub fn custom_layouter(
     }
     job.wrap.max_width = wrap_width;
     ui.fonts(|f| f.layout_job(job))
+}
+
+
+
+#[derive(PartialEq)]
+pub struct SpeedAnim {
+    pub shown: f32, // 화면에 표시 중인 속도(km/h)
+}
+impl Default for SpeedAnim {
+    fn default() -> Self { Self { shown: 0.0 } }
+}
+impl SpeedAnim {
+    /// target 으로 부드럽게 수렴 (critically damped-ish)
+    pub fn update(&mut self, ctx: &Context, target: f32) {
+        let dt = ctx.input(|i| i.stable_dt).max(1.0/240.0); // 초
+        // 반응속도 조절: k 값이 클수록 빠르게 따라감 (3~8 추천)
+        let k = 3.0;
+        self.shown += (target - self.shown) * (1.0 - (-k * dt).exp());
+        ctx.request_repaint(); // 계속 갱신
+    }
+}
+#[derive(Debug, Clone,PartialEq)]
+pub struct AltAnim {
+    pub shown: f32,
+    pub k: f32,
+    inited: bool,
+}
+impl Default for AltAnim {
+    fn default() -> Self { Self { shown: 0.0, k: 8.0, inited: false } }
+}
+impl AltAnim {
+    pub fn update(&mut self, ctx: &Context, target: f32) {
+        let dt = ctx.input(|i| i.stable_dt).max(1.0/240.0);
+        if !self.inited { self.shown = target; self.inited = true; }
+        self.shown += (target - self.shown) * (1.0 - (-self.k * dt).exp());
+        ctx.request_repaint();
+    }
 }

@@ -4,7 +4,7 @@ use chrono::{DateTime, Local};
 use eframe::egui::{self, Align, Color32, Layout, RichText, ViewportBuilder};
 use better_default::Default;
 use crate::{
-    components::{layout::{feild_font_edit, menu_button_layout, sub_menu_open}, setup_custom_fonts},
+    components::{layout::{feild_font_edit, menu_button_layout, sub_menu_open}, setup_custom_fonts, AltAnim, SpeedAnim},
     contents::{
         car_adapter::car_content_view, connect_bt, gps_adapter::gps_content_view,
         lte_adapter::lte_content_view, main_page::main_content_view, rf_page::rf_content_view,
@@ -31,6 +31,10 @@ struct Menu_Ctl{
     test_sms_pop_nt:bool,
     #[default(String::new())]
     test_gps_str:String,
+    speed_anim:SpeedAnim,
+    alt_anim:AltAnim,
+    #[default(0.)]
+    temp_speed:f32
     // #[default(false)]
     // lte_side:bool,
     // lte_anim:f32,
